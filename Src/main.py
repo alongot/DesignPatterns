@@ -1,53 +1,83 @@
-import tkinter as tk
-from tkinter import Canvas, Frame, Entry, Button, Scrollbar
+import matplotlib.pyplot as plt
+import networkx as nx
 
-class SimpleCanvasApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Tkinter Test App")
+# Function to add nodes and edges from a BST tuple
+def add_edges(G, node_tuple):
+    node, left, right = node_tuple
+    if left:
+        G.add_edge(node, left[0])
+        add_edges(G, left)
+    if right:
+        G.add_edge(node, right[0])
+        add_edges(G, right)
 
-        # Top panel with entry and buttons
-        self.top_panel = Frame(self.root)
-        self.top_panel.pack()
+# Function to perform in-order traversal and color nodes
+def inorder_traversal(node, visit_order):
+    if node[1]:  # Left subtree
+        inorder_traversal(node[1], visit_order)
+    visit_order.append(node[0])
+    if node[2]:  # Right subtree
+        inorder_traversal(node[2], visit_order)
 
-        self.entry = Entry(self.top_panel, width=10)
-        self.entry.pack(side=tk.LEFT)
+# Function to perform pre-order traversal and color nodes
+def preorder_traversal(node, visit_order):
+    visit_order.append(node[0])
+    if node[1]:  # Left subtree
+        preorder_traversal(node[1], visit_order)
+    if node[2]:  # Right subtree
+        preorder_traversal(node[2], visit_order)
 
-        self.draw_btn = Button(self.top_panel, text="Draw", command=self.draw_circle)
-        self.draw_btn.pack(side=tk.LEFT)
+# Function to insert a node in BST
+def insert_node(bst, value):
+    if bst is None:
+        return (value, None, None)
+    node, left, right = bst
+    if value < node:
+        return (node, insert_node(left, value), right)
+    elif value > node:
+        return (node, left, insert_node(right, value))
+    return bst
 
-        self.clear_btn = Button(self.top_panel, text="Clear", command=self.clear_canvas)
-        self.clear_btn.pack(side=tk.LEFT)
+# Define the initial BST as nested tuples: (value, left_subtree, right_subtree)
+bst = (10,
+       (5, (3, None, None), (7, None, None)),
+       (15, None, (18, None, None)))
 
-        # Canvas with scrollbar
-        self.canvas_frame = Frame(self.root)
-        self.canvas_frame.pack(fill=tk.BOTH, expand=True)
+# Create the directed graph
+G = nx.DiGraph()
+add_edges(G, bst)
 
-        self.canvas = Canvas(self.canvas_frame, width=800, height=600, bg="white", scrollregion=(0, 0, 1600, 1200))
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+# Layout using graphviz 'dot' for tree-like appearance
+pos = nx.nx_agraph.graphviz_layout(G, prog='dot')
 
-        self.scrollbar = Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.canvas.config(yscrollcommand=self.scrollbar.set)
+# Function to draw the tree
+def draw_tree(G, pos, title="Binary Search Tree"):
+    plt.figure(figsize=(8, 6))
+    nx.draw(G, pos, with_labels=True, node_size=1200, node_color='lightblue', font_size=10, arrows=False)
+    plt.title(title)
+    plt.tight_layout()
+    plt.show()
 
-        # Position tracker for drawing
-        self.x = 100
-        self.y = 100
+# Initial drawing of the tree
+draw_tree(G, pos)
 
-    def draw_circle(self):
-        try:
-            r = int(self.entry.get())
-            self.canvas.create_oval(self.x - r, self.y - r, self.x + r, self.y + r, fill="lightblue")
-            self.canvas.create_text(self.x, self.y, text=str(r))
-            self.y += 2 * r + 20  # move down for next shape
-        except ValueError:
-            pass
+# Add a new node (dynamically)
+new_value = 12
+bst = insert_node(bst, new_value)
 
-    def clear_canvas(self):
-        self.canvas.delete("all")
-        self.y = 100
+# Update the graph with the new tree structure
+G.clear()  # Clear the previous graph
+add_edges(G, bst)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = SimpleCanvasApp(root)
-    root.mainloop()
+# Update the drawing with the new tree
+draw_tree(G, pos, title=f"Binary Search Tree (After Insertion of {new_value})")
+
+# Traverse the tree (In-order and Pre-order)
+inorder_order = []
+inorder_traversal(bst, inorder_order)
+
+preorder_order = []
+preorder_traversal(bst, preorder_order)
+
+print(f"In-order Traversal: {inorder_order}")
+print(f"Pre-order Traversal: {preorder_order}")
